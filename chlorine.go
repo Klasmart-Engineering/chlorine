@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -70,10 +69,18 @@ func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error 
 		return err
 	}
 	if res.StatusCode != http.StatusOK {
-		log.Warn(ctx, "Run: read response failed",
-			log.Err(err), log.String("endpoint", c.endpoint),
-			log.Any("reqBody", reqBody), log.String("response", string(response)))
-		return errors.New(res.Status + string(response))
+		log.Warn(ctx, "Run: response is not ok",
+			log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody),
+			log.Int("status", res.StatusCode), log.String("response", string(response)))
+		var clErrs ClErrors
+		err = json.Unmarshal(response, &clErrs)
+		if err != nil {
+			log.Error(ctx, "Run: unmarshal error response failed",
+				log.Err(err), log.String("response", string(response)))
+			return err
+		} else {
+			return &clErrs
+		}
 	}
 	err = json.Unmarshal(response, resp)
 	if err != nil {
@@ -118,4 +125,15 @@ type ClError struct {
 			Stacktrace []string `json:"stacktrace"`
 		} `json:"exception"`
 	}
+}
+
+type ClErrors struct {
+	Errors []ClError `json:"errors"`
+}
+
+func (clErrs *ClErrors) Error() string {
+	if len(clErrs.Errors) > 0 {
+		return clErrs.Errors[0].Message
+	}
+	return "Empty ClErrors"
 }

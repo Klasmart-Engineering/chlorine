@@ -37,8 +37,8 @@ func TestQueryUser(t *testing.T) {
 		Errors []ClError `json:"errors,omitempty"`
 	}{}
 	req := NewRequest(q)
-	req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
-	//req.Var("userID", "1")
+	//req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
+	req.Var("userID", "1")
 	//req.Var("userIID", "1")
 	err := client.Run(context.Background(), req, &resp)
 	if err != nil {
