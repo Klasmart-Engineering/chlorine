@@ -41,7 +41,7 @@ func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error 
 		log.Warn(ctx, "Run: Marshal failed", log.Err(err), log.Any("reqBody", reqBody))
 		return err
 	}
-	request, err := http.NewRequest(http.MethodPost, c.endpoint, bytes.NewBuffer(reqBuffer))
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewBuffer(reqBuffer))
 	if err != nil {
 		log.Warn(ctx, "Run: New httpRequest failed", log.Err(err), log.Any("reqBody", reqBody))
 		return err
