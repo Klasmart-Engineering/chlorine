@@ -78,9 +78,8 @@ func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error 
 			log.Error(ctx, "Run: unmarshal error response failed",
 				log.Err(err), log.String("response", string(response)))
 			return err
-		} else {
-			return &clErrs
 		}
+		return &clErrs
 	}
 	err = json.Unmarshal(response, resp)
 	if err != nil {
