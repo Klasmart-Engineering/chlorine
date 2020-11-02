@@ -27,7 +27,7 @@ func NewClient(endpoint string) *Client {
 	return c
 }
 
-func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error {
+func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, error) {
 	reqBody := struct {
 		Query     string                 `json:"query"`
 		Variables map[string]interface{} `json:"variables"`
@@ -38,12 +38,12 @@ func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error 
 	reqBuffer, err := json.Marshal(&reqBody)
 	if err != nil {
 		log.Warn(ctx, "Run: Marshal failed", log.Err(err), log.Any("reqBody", reqBody))
-		return err
+		return 0, err
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewBuffer(reqBuffer))
 	if err != nil {
 		log.Warn(ctx, "Run: New httpRequest failed", log.Err(err), log.Any("reqBody", reqBody))
-		return err
+		return 0, err
 	}
 	if bada, ok := helper.GetBadaCtx(ctx); ok {
 		bada.SetHeader(request.Header)
@@ -58,7 +58,7 @@ func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error 
 	res, err := c.httpClient.Do(request)
 	if err != nil {
 		log.Error(ctx, "Run: do http failed", log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody))
-		return err
+		return 0, err
 	}
 	defer res.Body.Close()
 	response, err := ioutil.ReadAll(res.Body)
@@ -66,29 +66,16 @@ func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error 
 		log.Error(ctx, "Run: read response failed",
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
-		return err
-	}
-	if res.StatusCode != http.StatusOK {
-		log.Warn(ctx, "Run: response is not ok",
-			log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody),
-			log.Int("status", res.StatusCode), log.String("response", string(response)))
-		var clErrs ClErrors
-		err = json.Unmarshal(response, &clErrs)
-		if err != nil {
-			log.Error(ctx, "Run: unmarshal error response failed",
-				log.Err(err), log.String("response", string(response)))
-			return err
-		}
-		return &clErrs
+		return 0, err
 	}
 	err = json.Unmarshal(response, resp)
 	if err != nil {
 		log.Error(ctx, "Run: unmarshal response failed",
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
-		return err
+		return 0, err
 	}
-	return nil
+	return res.StatusCode, nil
 }
 
 type Request struct {
@@ -126,13 +113,16 @@ type ClError struct {
 	}
 }
 
-type ClErrors struct {
-	Errors []ClError `json:"errors"`
-}
+type ClErrors []*ClError
 
-func (clErrs *ClErrors) Error() string {
-	if len(clErrs.Errors) > 0 {
-		return clErrs.Errors[0].Message
+func (clErrs ClErrors) Error() string {
+	if len(clErrs) > 0 {
+		return clErrs[0].Message
 	}
 	return "Empty ClErrors"
+}
+
+type Response struct {
+	Data   interface{} `json:"data,omitempty"`
+	Errors ClErrors    `json:"errors,omitempty"`
 }
