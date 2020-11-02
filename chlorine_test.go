@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 type User struct {
@@ -43,7 +41,7 @@ func TestQueryUser(t *testing.T) {
 	//req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b51")
 	//req.Var("userID", "1")
 	//req.Var("userIID", "1")
-	err := client.Run(context.Background(), req, &resp)
+	_, err := client.Run(context.Background(), req, &resp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,6 +49,56 @@ func TestQueryUser(t *testing.T) {
 	fmt.Println(string(result))
 }
 
+func TestQueryOrgBatchDemo1(t *testing.T) {
+	q := `query{
+   org0: organization(organization_id: "44fa30db-365a-4589-a304-3c8a801debb5") {organization_name}
+   org1: organization(organization_id: "e236d102-5324-4740-8f36-629451557a2a") {organization_name}
+   org2: organization(organization_id: "3f135b91-a616-4c80-914a-e4463104dbac") {organization_name}
+   org3: organization(organization_id: "c70a525e-e62d-41a0-85a2-91ac9b707a53") {organization_name}
+   org4: organization(organization_id: "25b9c6dd-21e8-4718-8f90-d71e124684a8") {organization_name}
+   org5: organization(organization_id: "66d85eab-9e15-4d89-9e9d-f4ed37d254dd") {organization_name}
+   org6: organization(organization_id: "65f4a766-dc2f-4dad-a08c-d1d4ac02fcf1") {organization_name}
+   org7: organization(organization_id: "9657e271-1324-4fc5-a371-46748481d664") {organization_name}
+}`
+	req := NewRequest(q)
+	resp := Response{
+		Data: map[string]*struct {
+			OrgID   string `json:"organization_id"`
+			OrgName string `json:"organization_name"`
+		}{},
+	}
+
+	_, err := client.Run(context.Background(), req, &resp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, _ := json.Marshal(resp)
+	fmt.Println(string(result))
+}
+
+func TestQueryOrgBatchDemo2(t *testing.T) {
+	q := ` query($ids: [ID!]){
+	organizations(organization_ids: $ids){
+		organization_id
+		organization_name
+	}
+}`
+	req := NewRequest(q)
+	req.Var("ids", []string{"44fa30db-365a-4589-a304-3c8a801debb5", "e236d102-5324-4740-8f36-629451557a2a"})
+	resp := Response{
+		Data: map[string]*struct {
+			OrgID   string `json:"organization_id"`
+			OrgName string `json:"organization_name"`
+		}{},
+	}
+
+	_, err := client.Run(context.Background(), req, &resp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, _ := json.Marshal(resp)
+	fmt.Println(string(result))
+}
 func TestUpdateUser(t *testing.T) {
 	q := `mutation update_user($userID: ID!, $userName: String){
 	user(user_id:$userID, user_name:$userName){
@@ -71,42 +119,10 @@ func TestUpdateUser(t *testing.T) {
 	req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
 	req.Var("userName", "PJ")
 	//req.Var("userID", "1")
-	err := client.Run(context.Background(), req, &resp)
+	_, err := client.Run(context.Background(), req, &resp)
 	if err != nil {
 		t.Fatal(err)
 	}
 	result, _ := json.Marshal(resp)
 	fmt.Println(string(result))
-}
-
-const publicKeyOwen = `
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxdHMYTqFobj3oGD/JDYb
-DN07icTH/Dj7jBtJSG2clM6hQ1HRLApQUNoqcrcJzA0A7aNqELIJuxMovYAoRtAT
-E1pYMWpVyG41inQiJjKFyAkuHsVzL+t2C778BFxlXTC/VWoR6CowWSWJaYlT5fA/
-krUew7/+sGW6rjV2lQqxBN3sQsfaDOdN5IGkizsfMpdrETbc5tKksNs6nL6SFRDe
-LoS4AH5KI4T0/HC53iLDjgBoka7tJuu3YsOBzxDX22FbYfTFV7MmPyq++8ANbzTL
-sgaD2lwWhfWO51cWJnFIPc7gHBq9kMqMK3T2dw0jCHpA4vYEMjsErNSWKjaxF8O/
-FwIDAQAB
------END PUBLIC KEY-----`
-
-var token = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImI0MjI3NDNlLTllYmMtNWVkNy1iNzI1LTA2Mjk5NGVjNzdmMiIsImVtYWlsIjoiYnJpbGxpYW50LnlhbmdAYmFkYW5hbXUuY29tLmNuIiwiZXhwIjoxNjA1MTc4Nzk2LCJpc3MiOiJraWRzbG9vcCJ9.sDkGFTIWm-NgEDfNJoMS_3KoKcZs0smnR7whqWY0AMnYLFYX3j_Saj6gHjXHpmZMVewbnaNfv9lYfhSokFBZaCcYyeVBXQo6DHL6nppsMUFwmcTjl-NjqSGwYUvjpV7cmkmL33H8KojEuBUDP8kOK-cF5Km28PC6sV2nFRVBNFBXlcNsdB-CIQEeycCzRhw078GAP64Bpugay8W-77keldN-C1Qnrc6spbSCOKnxMpT94pBRzgB8D-vHdcnvB3zlfPj8RYWFlGE_uufHfPTSgS-nTzrz8vRhiJdOAYdPys90w87jGfmopm1AT-qDSqa4Qf8hMW4bj_UDAa4-1bI-yQ"
-
-func TestParseJWT(t *testing.T) {
-	claims := &struct {
-		ID    string `json:"id"`
-		Email string `json:"email"`
-		*jwt.StandardClaims
-	}{}
-	_, err := jwt.ParseWithClaims(token, claims, func(*jwt.Token) (interface{}, error) {
-		return jwt.ParseRSAPublicKeyFromPEM([]byte(publicKeyOwen))
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	marshal, err := json.Marshal(claims)
-	if err != nil {
-		t.Fatal(err)
-	}
-	fmt.Println(string(marshal))
 }

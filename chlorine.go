@@ -27,7 +27,7 @@ func NewClient(endpoint string) *Client {
 	return c
 }
 
-func (c *Client) Run(ctx context.Context, req *Request, resp *Response) error {
+func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, error) {
 	reqBody := struct {
 		Query     string                 `json:"query"`
 		Variables map[string]interface{} `json:"variables"`
@@ -38,12 +38,12 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) error {
 	reqBuffer, err := json.Marshal(&reqBody)
 	if err != nil {
 		log.Warn(ctx, "Run: Marshal failed", log.Err(err), log.Any("reqBody", reqBody))
-		return err
+		return 0, err
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewBuffer(reqBuffer))
 	if err != nil {
 		log.Warn(ctx, "Run: New httpRequest failed", log.Err(err), log.Any("reqBody", reqBody))
-		return err
+		return 0, err
 	}
 	if bada, ok := helper.GetBadaCtx(ctx); ok {
 		bada.SetHeader(request.Header)
@@ -58,7 +58,7 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) error {
 	res, err := c.httpClient.Do(request)
 	if err != nil {
 		log.Error(ctx, "Run: do http failed", log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody))
-		return err
+		return 0, err
 	}
 	defer res.Body.Close()
 	response, err := ioutil.ReadAll(res.Body)
@@ -66,19 +66,16 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) error {
 		log.Error(ctx, "Run: read response failed",
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
-		return err
+		return 0, err
 	}
 	err = json.Unmarshal(response, resp)
 	if err != nil {
 		log.Error(ctx, "Run: unmarshal response failed",
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
-		return err
+		return 0, err
 	}
-	if res.StatusCode != http.StatusOK {
-		return resp.Errors
-	}
-	return nil
+	return res.StatusCode, nil
 }
 
 type Request struct {
