@@ -27,7 +27,7 @@ func NewClient(endpoint string) *Client {
 	return c
 }
 
-func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error {
+func (c *Client) Run(ctx context.Context, req *Request, resp *Response) error {
 	reqBody := struct {
 		Query     string                 `json:"query"`
 		Variables map[string]interface{} `json:"variables"`
@@ -68,25 +68,15 @@ func (c *Client) Run(ctx context.Context, req *Request, resp interface{}) error 
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
 		return err
 	}
-	if res.StatusCode != http.StatusOK {
-		log.Warn(ctx, "Run: response is not ok",
-			log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody),
-			log.Int("status", res.StatusCode), log.String("response", string(response)))
-		var clErrs ClErrors
-		err = json.Unmarshal(response, &clErrs)
-		if err != nil {
-			log.Error(ctx, "Run: unmarshal error response failed",
-				log.Err(err), log.String("response", string(response)))
-			return err
-		}
-		return &clErrs
-	}
 	err = json.Unmarshal(response, resp)
 	if err != nil {
 		log.Error(ctx, "Run: unmarshal response failed",
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
 		return err
+	}
+	if res.StatusCode != http.StatusOK {
+		return resp.Errors
 	}
 	return nil
 }
@@ -126,13 +116,16 @@ type ClError struct {
 	}
 }
 
-type ClErrors struct {
-	Errors []ClError `json:"errors"`
-}
+type ClErrors []*ClError
 
-func (clErrs *ClErrors) Error() string {
-	if len(clErrs.Errors) > 0 {
-		return clErrs.Errors[0].Message
+func (clErrs ClErrors) Error() string {
+	if len(clErrs) > 0 {
+		return clErrs[0].Message
 	}
 	return "Empty ClErrors"
+}
+
+type Response struct {
+	Data   interface{} `json:"data,omitempty"`
+	Errors ClErrors    `json:"errors,omitempty"`
 }

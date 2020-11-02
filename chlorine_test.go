@@ -30,24 +30,25 @@ func TestQueryUser(t *testing.T) {
 	}
 }
 `
-	resp := struct {
-		Data struct {
-			User struct {
+	resp := Response{
+		Data: &struct {
+			User *struct {
 				UserID   string `json:"user_id"`
 				UserName string `json:"user_name"`
-			} `json:"user"`
-		} `json:"data,omitempty"`
-		Errors []ClError `json:"errors,omitempty"`
-	}{}
+			} `json:"user,omitempty"`
+		}{},
+	}
 	req := NewRequest(q)
-	//req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
-	req.Var("userID", "1")
+	req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
+	//req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b51")
+	//req.Var("userID", "1")
 	//req.Var("userIID", "1")
 	err := client.Run(context.Background(), req, &resp)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(resp)
+	result, _ := json.Marshal(resp)
+	fmt.Println(string(result))
 }
 
 func TestUpdateUser(t *testing.T) {
@@ -58,15 +59,14 @@ func TestUpdateUser(t *testing.T) {
 	}
 }
 `
-	resp := struct {
-		Data struct {
-			User struct {
+	resp := Response{
+		Data: &struct {
+			User *struct {
 				UserID   string `json:"user_id"`
 				UserName string `json:"user_name"`
-			} `json:"user"`
-		} `json:"data,omitempty"`
-		Errors []ClError `json:"errors,omitempty"`
-	}{}
+			} `json:"user,omitempty"`
+		}{},
+	}
 	req := NewRequest(q)
 	req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
 	req.Var("userName", "PJ")
@@ -75,7 +75,8 @@ func TestUpdateUser(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(resp)
+	result, _ := json.Marshal(resp)
+	fmt.Println(string(result))
 }
 
 const publicKeyOwen = `
