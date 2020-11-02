@@ -1,4 +1,4 @@
-module chlorine
+module gitlab.badanamu.com.cn/calmisland/chlorine
 
 go 1.15
 
