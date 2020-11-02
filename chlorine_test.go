@@ -77,7 +77,11 @@ func TestQueryOrgBatchDemo1(t *testing.T) {
 }
 
 func TestQueryOrgBatchDemo2(t *testing.T) {
+<<<<<<< HEAD
 	q := `query($ids: [ID!]){
+=======
+	q := ` query($ids: [ID!]){
+>>>>>>> 1bcc76ccd1becf2ad5725ebf7ef79449344e5439
 	organizations(organization_ids: $ids){
 		organization_id
 		organization_name
