@@ -27,7 +27,7 @@ func NewClient(endpoint string) *Client {
 	return c
 }
 
-func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, error) {
+func (c *Client) Run(ctx context.Context, req *Request, resp *Response, token string) (int, error) {
 	reqBody := struct {
 		Query     string                 `json:"query"`
 		Variables map[string]interface{} `json:"variables"`
@@ -50,6 +50,7 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	}
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
 	request.Header.Set("Accept", "application; charset=utf-8")
+	request.AddCookie(&http.Cookie{Name: "access", Value: token})
 	for key, values := range req.Header {
 		for _, value := range values {
 			request.Header.Add(key, value)
