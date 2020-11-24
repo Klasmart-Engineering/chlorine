@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -48,13 +49,9 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	if bada, ok := helper.GetBadaCtx(ctx); ok {
 		bada.SetHeader(request.Header)
 	}
+	request.Header = req.Header
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
 	request.Header.Set("Accept", "application; charset=utf-8")
-	for key, values := range req.Header {
-		for _, value := range values {
-			request.Header.Add(key, value)
-		}
-	}
 	res, err := c.httpClient.Do(request)
 	if err != nil {
 		log.Error(ctx, "Run: do http failed", log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody))
@@ -84,10 +81,22 @@ type Request struct {
 	Header http.Header
 }
 
-func NewRequest(q string) *Request {
+type OptFunc func(*Request)
+
+func ReqToken(token string) OptFunc {
+	return func(req *Request) {
+		req.Header.Add(cookieKey, fmt.Sprintf("access=%s", token))
+	}
+}
+
+func NewRequest(q string, opt ...OptFunc) *Request {
 	req := &Request{
 		q:      q,
 		Header: make(map[string][]string),
+	}
+
+	for i := range opt {
+		opt[i](req)
 	}
 	return req
 }
@@ -98,6 +107,16 @@ func (req *Request) Var(key string, value interface{}) {
 	}
 	req.vars[key] = value
 }
+
+func (req *Request) SetHeader(key string, value string) {
+	req.Header[key] = []string{value}
+}
+
+func (req *Request) SetHeaders(key string, values []string) {
+	req.Header[key] = values
+}
+
+const cookieKey = "Cookie"
 
 type ClError struct {
 	Message   string `json:"message"`

@@ -18,6 +18,7 @@ type Organization struct {
 	OrgName string
 }
 
+var token = "eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjIwMTNlNTNlLTUyZGQtNWUxYy1hZjBiLWI1MDNlMzFjOGE1OSIsImVtYWlsIjoiYnJpbGxpYW50LnlhbmdAYmFkYW5hbXUuY29tLmNuIiwiZXhwIjoxNjA2MjAyOTg4LCJpc3MiOiJraWRzbG9vcCJ9.Njz8v5A6pMjNPi3aDoDUSGmYnUYKibv44sTxQtd3PSrzXbWya28qVx_OpUON1UvdIixpy_HD61nmial0C3bnWTb6F9256cmPA9w_GypvC14YCm5jE4-HsOhtGZIVkrQKp4DXP8G1nujC9o_YCR6z5OemfnITmPoPdoO44OCbbHiF2IHNJfpTqFVGvUd32ZXhGf1Njpsk9Q2bFWeyYyNQan8raTVvDsWNlHp_UzgsBVopyRM1BlqO8te6z6mWEt_g851HKPSauPZGZFD1RHq351Lhg5YogsXF0eNf-n6TCujAFs54kYJDG2Q9pJHjsGfYkmg8K6yHzugO9KpJ8Xyd6g"
 var client = NewClient("https://api.beta.kidsloop.net/user/")
 
 func TestQueryUser(t *testing.T) {
@@ -36,7 +37,7 @@ func TestQueryUser(t *testing.T) {
 			} `json:"user,omitempty"`
 		}{},
 	}
-	req := NewRequest(q)
+	req := NewRequest(q, ReqToken(token))
 	req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
 	//req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b51")
 	//req.Var("userID", "1")
@@ -125,4 +126,16 @@ func TestUpdateUser(t *testing.T) {
 	}
 	result, _ := json.Marshal(resp)
 	fmt.Println(string(result))
+}
+
+func TestRequest_SetHeader(t *testing.T) {
+	req := NewRequest("")
+	req.SetHeader("access", "token")
+	fmt.Println(req)
+}
+
+func TestRequest_SetHeaders(t *testing.T) {
+	req := NewRequest("")
+	req.SetHeaders("cookie", []string{"access=token"})
+	fmt.Println(req)
 }
