@@ -39,10 +39,11 @@ func TestQueryUser(t *testing.T) {
 	}
 	req := NewRequest(q)
 	req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
+	req.AddCookies([]string{"access=token", "locale=zh-CN"})
 	//req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b51")
 	//req.Var("userID", "1")
 	//req.Var("userIID", "1")
-	_, err := client.Run(context.Background(), req, &resp, token)
+	_, err := client.Run(context.Background(), req, &resp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,7 +70,7 @@ func TestQueryOrgBatchDemo1(t *testing.T) {
 		}{},
 	}
 
-	_, err := client.Run(context.Background(), req, &resp, token)
+	_, err := client.Run(context.Background(), req, &resp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +94,7 @@ func TestQueryOrgBatchDemo2(t *testing.T) {
 		}{},
 	}
 
-	_, err := client.Run(context.Background(), req, &resp, token)
+	_, err := client.Run(context.Background(), req, &resp)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,10 +121,28 @@ func TestUpdateUser(t *testing.T) {
 	req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
 	req.Var("userName", "PJ")
 	//req.Var("userID", "1")
-	_, err := client.Run(context.Background(), req, &resp, token)
+	_, err := client.Run(context.Background(), req, &resp)
 	if err != nil {
 		t.Fatal(err)
 	}
 	result, _ := json.Marshal(resp)
 	fmt.Println(string(result))
+}
+
+func TestRequest_SetHeader(t *testing.T) {
+	req := NewRequest("")
+	req.AddHeader("access", "token")
+	fmt.Println(req)
+}
+
+func TestRequest_SetHeaders(t *testing.T) {
+	req := NewRequest("")
+	req.AddHeaders("cookie", []string{"access=token"})
+	fmt.Println(req)
+}
+
+func TestRequest_AddCookie(t *testing.T) {
+	req := NewRequest("")
+	req.AddCookies([]string{"access=token", "locale=zh-CN"})
+	fmt.Println(req)
 }
