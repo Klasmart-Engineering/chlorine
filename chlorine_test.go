@@ -37,9 +37,8 @@ func TestQueryUser(t *testing.T) {
 			} `json:"user,omitempty"`
 		}{},
 	}
-	req := NewRequest(q)
+	req := NewRequest(q, ReqToken(token))
 	req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b50")
-	req.AddCookies([]string{"access=token", "locale=zh-CN"})
 	//req.Var("userID", "be8ca64d-105d-4551-9b15-5d8fb2585b51")
 	//req.Var("userID", "1")
 	//req.Var("userIID", "1")
@@ -131,18 +130,12 @@ func TestUpdateUser(t *testing.T) {
 
 func TestRequest_SetHeader(t *testing.T) {
 	req := NewRequest("")
-	req.AddHeader("access", "token")
+	req.SetHeader("access", "token")
 	fmt.Println(req)
 }
 
 func TestRequest_SetHeaders(t *testing.T) {
 	req := NewRequest("")
-	req.AddHeaders("cookie", []string{"access=token"})
-	fmt.Println(req)
-}
-
-func TestRequest_AddCookie(t *testing.T) {
-	req := NewRequest("")
-	req.AddCookies([]string{"access=token", "locale=zh-CN"})
+	req.SetHeaders("cookie", []string{"access=token"})
 	fmt.Println(req)
 }
