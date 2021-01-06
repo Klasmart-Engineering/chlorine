@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"gitlab.badanamu.com.cn/calmisland/common-cn/helper"
 
@@ -52,15 +53,18 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	request.Header = req.Header
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
 	request.Header.Set("Accept", "application; charset=utf-8")
+	start := time.Now()
 	res, err := c.httpClient.Do(request)
+	duration := time.Since(start)
 	if err != nil {
-		log.Error(ctx, "Run: do http failed", log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody))
+		log.Error(ctx, "Run: do http failed", log.Duration("duration", duration), log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody))
 		return 0, err
 	}
 	defer res.Body.Close()
 	response, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Error(ctx, "Run: read response failed",
+			log.Duration("duration", duration),
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
 		return 0, err
@@ -68,10 +72,12 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	err = json.Unmarshal(response, resp)
 	if err != nil {
 		log.Error(ctx, "Run: unmarshal response failed",
+			log.Duration("duration", duration),
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
 		return 0, err
 	}
+	log.Debug(ctx, "Run: Success", log.Duration("duration", duration), log.Any("reqBody", reqBody), log.String("response", string(response)))
 	return res.StatusCode, nil
 }
 
