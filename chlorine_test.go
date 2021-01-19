@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"gitlab.badanamu.com.cn/calmisland/common-log/log"
 	"testing"
+	"time"
 )
 
 type User struct {
@@ -135,7 +137,12 @@ func TestRequest_SetHeader(t *testing.T) {
 }
 
 func TestRequest_SetHeaders(t *testing.T) {
+	start := time.Now()
 	req := NewRequest("")
 	req.SetHeaders("cookie", []string{"access=token"})
 	fmt.Println(req)
+	time.Sleep(1*time.Second)
+	duration := time.Since(start)
+	fmt.Println(duration.Milliseconds(), duration.String())
+	log.Debug(context.Background(),"test duration", log.Duration("duration", duration))
 }
