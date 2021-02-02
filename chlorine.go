@@ -39,12 +39,18 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	}
 	reqBuffer, err := json.Marshal(&reqBody)
 	if err != nil {
-		log.Warn(ctx, "Run: Marshal failed", log.Err(err), log.Any("reqBody", reqBody))
+		log.Warn(ctx, "Run: Marshal failed",
+			log.Err(err),
+			log.Any("reqHeader", req.Header),
+			log.Any("reqBody", reqBody))
 		return 0, err
 	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewBuffer(reqBuffer))
 	if err != nil {
-		log.Warn(ctx, "Run: New httpRequest failed", log.Err(err), log.Any("reqBody", reqBody))
+		log.Warn(ctx, "Run: New httpRequest failed",
+			log.Err(err),
+			log.Any("reqHeader", req.Header),
+			log.Any("reqBody", reqBody))
 		return 0, err
 	}
 	if bada, ok := helper.GetBadaCtx(ctx); ok {
@@ -57,7 +63,11 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	res, err := c.httpClient.Do(request)
 	duration := time.Since(start).Milliseconds()
 	if err != nil {
-		log.Error(ctx, "Run: do http failed", log.Int64("duration", duration), log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody))
+		log.Error(ctx, "Run: do http failed",
+			log.Int64("duration", duration), log.Err(err),
+			log.String("endpoint", c.endpoint),
+			log.Any("reqHeader", req.Header),
+			log.Any("reqBody", reqBody))
 		return 0, err
 	}
 	defer res.Body.Close()
@@ -66,6 +76,7 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 		log.Error(ctx, "Run: read response failed",
 			log.Int64("duration", duration),
 			log.Err(err), log.String("endpoint", c.endpoint),
+			log.Any("reqHeader", req.Header),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
 		return 0, err
 	}
@@ -74,10 +85,15 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 		log.Error(ctx, "Run: unmarshal response failed",
 			log.Int64("duration", duration),
 			log.Err(err), log.String("endpoint", c.endpoint),
+			log.Any("reqHeader", req.Header),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
 		return 0, err
 	}
-	log.Debug(ctx, "Run: Success", log.Int64("duration", duration), log.Any("reqBody", reqBody), log.String("response", string(response)))
+	log.Debug(ctx, "Run: Success",
+		log.Int64("duration", duration),
+		log.Any("reqHeader", req.Header),
+		log.Any("reqBody", reqBody),
+		log.String("response", string(response)))
 	return res.StatusCode, nil
 }
 
