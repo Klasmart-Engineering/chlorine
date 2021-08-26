@@ -17,11 +17,14 @@ import (
 type Client struct {
 	endpoint   string
 	httpClient *http.Client
+	httpTimeout time.Duration
 }
 
+const defaultHttpTimeout = time.Minute
 func NewClient(endpoint string) *Client {
 	c := &Client{
 		endpoint: endpoint,
+		httpTimeout: defaultHttpTimeout,
 	}
 	if c.httpClient == nil {
 		c.httpClient = http.DefaultClient
@@ -29,7 +32,31 @@ func NewClient(endpoint string) *Client {
 	return c
 }
 
+type OptionChlorine func(c *Client)
+
+func WithTimeout(duration time.Duration) OptionChlorine {
+	return func(c *Client) {
+		c.httpTimeout = duration
+	}
+}
+
+func NewClientWithOption(endpoint string, options ...OptionChlorine) *Client {
+	c := &Client{
+		endpoint: endpoint,
+		httpClient: http.DefaultClient,
+		httpTimeout: defaultHttpTimeout,
+	}
+	for i := range options {
+		options[i](c)
+	}
+	return c
+}
+
+
 func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, error) {
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, c.httpTimeout)
+	defer cancel()
+
 	reqBody := struct {
 		Query     string                 `json:"query"`
 		Variables map[string]interface{} `json:"variables"`
@@ -39,46 +66,79 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	}
 	reqBuffer, err := json.Marshal(&reqBody)
 	if err != nil {
-		log.Warn(ctx, "Run: Marshal failed", log.Err(err), log.Any("reqBody", reqBody))
+		log.Warn(ctxWithTimeout, "Run: Marshal failed", log.Err(err), log.Any("reqBody", reqBody))
 		return 0, err
 	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewBuffer(reqBuffer))
+	request, err := http.NewRequestWithContext(ctxWithTimeout, http.MethodPost, c.endpoint, bytes.NewBuffer(reqBuffer))
 	if err != nil {
-		log.Warn(ctx, "Run: New httpRequest failed", log.Err(err), log.Any("reqBody", reqBody))
+		log.Warn(ctxWithTimeout, "Run: New httpRequest failed", log.Err(err), log.Any("reqBody", reqBody))
 		return 0, err
 	}
-	if bada, ok := helper.GetBadaCtx(ctx); ok {
+	if bada, ok := helper.GetBadaCtx(ctxWithTimeout); ok {
 		bada.SetHeader(request.Header)
 	}
 	request.Header = req.Header
 	request.Header.Set("Content-Type", "application/json; charset=utf-8")
 	request.Header.Set("Accept", "application; charset=utf-8")
+	var result *http.Response
+	var resultErr error
+	httpDone := make(chan struct{})
+
 	start := time.Now()
-	res, err := c.httpClient.Do(request)
-	duration := time.Since(start)
-	if err != nil {
-		log.Error(ctx, "Run: do http failed", log.Duration("duration", duration), log.Err(err), log.String("endpoint", c.endpoint), log.Any("reqBody", reqBody))
-		return 0, err
+	go func() {
+		result, resultErr = c.httpClient.Do(request)
+		httpDone <- struct{}{}
+	}()
+
+	select {
+	case <-httpDone:
+		log.Info(ctxWithTimeout, "OK")
+	case <-ctxWithTimeout.Done():
+		resultErr = ctxWithTimeout.Err()
 	}
-	defer res.Body.Close()
-	response, err := ioutil.ReadAll(res.Body)
+	duration := time.Since(start)
+
+	if resultErr == context.DeadlineExceeded {
+		log.Error(ctxWithTimeout, "Run: do http failed",
+			log.Duration("duration", duration),
+			log.Err(resultErr),
+			log.String("endpoint", c.endpoint),
+			log.Any("reqBody", reqBody))
+		return http.StatusRequestTimeout, resultErr
+	}
+
+	if resultErr != nil {
+		log.Error(ctxWithTimeout, "Run: do http failed",
+			log.Duration("duration", duration),
+			log.Err(resultErr),
+			log.String("endpoint", c.endpoint),
+			log.Any("reqBody", reqBody))
+		return 0, resultErr
+	}
+
+	defer result.Body.Close()
+	response, err := ioutil.ReadAll(result.Body)
 	if err != nil {
-		log.Error(ctx, "Run: read response failed",
+		log.Error(ctxWithTimeout, "Run: read response failed",
 			log.Duration("duration", duration),
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
-		return 0, err
+		return result.StatusCode, err
 	}
+
 	err = json.Unmarshal(response, resp)
 	if err != nil {
-		log.Error(ctx, "Run: unmarshal response failed",
+		log.Error(ctxWithTimeout, "Run: unmarshal response failed",
 			log.Duration("duration", duration),
 			log.Err(err), log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody), log.String("response", string(response)))
-		return 0, err
+		return result.StatusCode, err
 	}
-	log.Debug(ctx, "Run: Success", log.Duration("duration", duration), log.Any("reqBody", reqBody), log.String("response", string(response)))
-	return res.StatusCode, nil
+	log.Debug(ctxWithTimeout, "Run: Success",
+		log.Duration("duration", duration),
+		log.Any("reqBody", reqBody),
+		log.String("response", string(response)))
+	return result.StatusCode, nil
 }
 
 type Request struct {
