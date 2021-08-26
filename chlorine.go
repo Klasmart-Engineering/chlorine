@@ -84,19 +84,16 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	case <-httpDone:
 		log.Info(ctxWithTimeout, "OK")
 	case <-ctxWithTimeout.Done():
-		resultErr = ctxWithTimeout.Err()
-	}
-	duration := time.Since(start)
-
-	if resultErr == context.DeadlineExceeded {
+		duration := time.Since(start)
 		log.Error(ctxWithTimeout, "Run: do http failed",
 			log.Duration("duration", duration),
 			log.Err(resultErr),
 			log.String("endpoint", c.endpoint),
 			log.Any("reqBody", reqBody))
-		return http.StatusRequestTimeout, resultErr
+		return http.StatusRequestTimeout, ctxWithTimeout.Err()
 	}
 
+	duration := time.Since(start)
 	if resultErr != nil {
 		log.Error(ctxWithTimeout, "Run: do http failed",
 			log.Duration("duration", duration),
