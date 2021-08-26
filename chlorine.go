@@ -21,16 +21,6 @@ type Client struct {
 }
 
 const defaultHttpTimeout = time.Minute
-func NewClient(endpoint string) *Client {
-	c := &Client{
-		endpoint: endpoint,
-		httpTimeout: defaultHttpTimeout,
-	}
-	if c.httpClient == nil {
-		c.httpClient = http.DefaultClient
-	}
-	return c
-}
 
 type OptionChlorine func(c *Client)
 
@@ -40,7 +30,7 @@ func WithTimeout(duration time.Duration) OptionChlorine {
 	}
 }
 
-func NewClientWithOption(endpoint string, options ...OptionChlorine) *Client {
+func NewClient(endpoint string, options ...OptionChlorine) *Client {
 	c := &Client{
 		endpoint: endpoint,
 		httpClient: http.DefaultClient,
