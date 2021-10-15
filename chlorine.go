@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	newrelic "github.com/newrelic/go-agent"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -15,8 +16,8 @@ import (
 )
 
 type Client struct {
-	endpoint   string
-	httpClient *http.Client
+	endpoint    string
+	httpClient  *http.Client
 	httpTimeout time.Duration
 }
 
@@ -30,10 +31,18 @@ func WithTimeout(duration time.Duration) OptionChlorine {
 	}
 }
 
+func DisableNewRelicDistributedTracing(httpClient *http.Client) OptionChlorine {
+	return func(c *Client) {
+		c.httpClient = httpClient
+	}
+}
+
 func NewClient(endpoint string, options ...OptionChlorine) *Client {
 	c := &Client{
-		endpoint: endpoint,
-		httpClient: http.DefaultClient,
+		endpoint:    endpoint,
+		// New Relic will look for txn in the request context if txn is nil,
+		// and using default transport if original transport is nil. So args: (nil, nil) is ok
+		httpClient:  &http.Client{Transport: newrelic.NewRoundTripper(nil, nil)},
 		httpTimeout: defaultHttpTimeout,
 	}
 	for i := range options {
@@ -41,7 +50,6 @@ func NewClient(endpoint string, options ...OptionChlorine) *Client {
 	}
 	return c
 }
-
 
 func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, c.httpTimeout)
