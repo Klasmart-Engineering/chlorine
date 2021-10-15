@@ -3,6 +3,7 @@ module gitlab.badanamu.com.cn/calmisland/chlorine
 go 1.15
 
 require (
+	github.com/newrelic/go-agent v3.15.0+incompatible
 	gitlab.badanamu.com.cn/calmisland/common-cn v0.17.0
 	gitlab.badanamu.com.cn/calmisland/common-log v0.1.6
 	go.mongodb.org/mongo-driver v1.7.1 // indirect
