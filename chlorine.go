@@ -37,12 +37,26 @@ func DisableNewRelicDistributedTracing(httpClient *http.Client) OptionChlorine {
 	}
 }
 
+type debugTransport struct{
+	http.RoundTripper
+}
+
+func (d *debugTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	ctx := req.Context()
+	txnExist := newrelic.FromContext(ctx) != nil
+	log.Debug(ctx, "chlorine costume round trip",
+		log.Any("headers", req.Header),
+		log.Bool("txn exist", txnExist))
+	return d.RoundTripper.RoundTrip(req)
+}
+
 func NewClient(endpoint string, options ...OptionChlorine) *Client {
 	c := &Client{
 		endpoint:    endpoint,
 		// New Relic will look for txn in the request context if txn is nil,
 		// and using default transport if original transport is nil. So args: (nil, nil) is ok
-		httpClient:  &http.Client{Transport: newrelic.NewRoundTripper(nil, nil)},
+		httpClient:  &http.Client{Transport: &debugTransport{
+			newrelic.NewRoundTripper(nil, nil)}},
 		httpTimeout: defaultHttpTimeout,
 	}
 	for i := range options {
