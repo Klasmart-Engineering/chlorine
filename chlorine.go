@@ -91,26 +91,9 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 	request.Header.Set("Accept", "application; charset=utf-8")
 	var result *http.Response
 	var resultErr error
-	httpDone := make(chan struct{})
 
 	start := time.Now()
-	go func() {
-		result, resultErr = c.httpClient.Do(request)
-		httpDone <- struct{}{}
-	}()
-
-	select {
-	case <-httpDone:
-		log.Info(ctxWithTimeout, "OK")
-	case <-ctxWithTimeout.Done():
-		duration := time.Since(start)
-		log.Error(ctxWithTimeout, "Run: do http failed",
-			log.Duration("duration", duration),
-			log.Err(resultErr),
-			log.String("endpoint", c.endpoint),
-			log.Any("reqBody", reqBody))
-		return http.StatusRequestTimeout, ctxWithTimeout.Err()
-	}
+	result, resultErr = c.httpClient.Do(request)
 
 	duration := time.Since(start)
 	if resultErr != nil {
