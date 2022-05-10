@@ -5,14 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	newrelic "github.com/newrelic/go-agent"
+
 	"io/ioutil"
 	"net/http"
 	"time"
 
-	"gitlab.badanamu.com.cn/calmisland/common-cn/helper"
-
-	"gitlab.badanamu.com.cn/calmisland/common-log/log"
+	"github.com/KL-Engineering/common-log/log"
+	gintrace "github.com/KL-Engineering/gin-trace"
+	newrelic "github.com/newrelic/go-agent"
 )
 
 type Client struct {
@@ -50,7 +50,7 @@ func (d debugTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 
 func NewClient(endpoint string, options ...OptionChlorine) *Client {
 	c := &Client{
-		endpoint:    endpoint,
+		endpoint: endpoint,
 		// New Relic will look for txn in the request context if txn is nil,
 		// and using default transport if original transport is nil. So args: (nil, nil) is ok
 		httpClient:  &http.Client{Transport: newrelic.NewRoundTripper(nil, debugTransport{})},
@@ -83,7 +83,7 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 		log.Warn(ctxWithTimeout, "Run: New httpRequest failed", log.Err(err), log.Any("reqBody", reqBody))
 		return 0, err
 	}
-	if bada, ok := helper.GetBadaCtx(ctxWithTimeout); ok {
+	if bada, ok := gintrace.GetBadaCtx(ctxWithTimeout); ok {
 		bada.SetHeader(request.Header)
 	}
 	request.Header = req.Header
