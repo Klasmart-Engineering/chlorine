@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/KL-Engineering/common-log v0.3.0
-	github.com/KL-Engineering/gin-trace v1.0.1
+	github.com/KL-Engineering/tracecontext v0.1.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/newrelic/go-agent v3.15.0+incompatible
 )
@@ -21,7 +21,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
-	go.mongodb.org/mongo-driver v1.8.3 // indirect
+	go.mongodb.org/mongo-driver v1.9.1 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect

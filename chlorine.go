@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/KL-Engineering/common-log/log"
-	gintrace "github.com/KL-Engineering/gin-trace"
+	"github.com/KL-Engineering/tracecontext"
 	newrelic "github.com/newrelic/go-agent"
 )
 
@@ -83,7 +83,7 @@ func (c *Client) Run(ctx context.Context, req *Request, resp *Response) (int, er
 		log.Warn(ctxWithTimeout, "Run: New httpRequest failed", log.Err(err), log.Any("reqBody", reqBody))
 		return 0, err
 	}
-	if bada, ok := gintrace.GetBadaCtx(ctxWithTimeout); ok {
+	if bada, ok := tracecontext.GetTraceContext(ctxWithTimeout); ok {
 		bada.SetHeader(request.Header)
 	}
 	request.Header = req.Header
