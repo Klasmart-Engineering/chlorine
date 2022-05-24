@@ -12,7 +12,7 @@ import (
 
 	"github.com/KL-Engineering/common-log/log"
 	"github.com/KL-Engineering/tracecontext"
-	newrelic "github.com/newrelic/go-agent"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 type Client struct {
@@ -51,9 +51,7 @@ func (d debugTransport) RoundTrip(req *http.Request) (resp *http.Response, err e
 func NewClient(endpoint string, options ...OptionChlorine) *Client {
 	c := &Client{
 		endpoint: endpoint,
-		// New Relic will look for txn in the request context if txn is nil,
-		// and using default transport if original transport is nil. So args: (nil, nil) is ok
-		httpClient:  &http.Client{Transport: newrelic.NewRoundTripper(nil, debugTransport{})},
+		httpClient:  &http.Client{Transport: newrelic.NewRoundTripper(debugTransport{})},
 		httpTimeout: defaultHttpTimeout,
 	}
 	for i := range options {
