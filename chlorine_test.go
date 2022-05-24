@@ -4,15 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/KL-Engineering/common-log/log"
-	"github.com/gin-gonic/gin"
-	newrelic "github.com/newrelic/go-agent"
-	"github.com/newrelic/go-agent/_integrations/nrgin/v1"
 )
 
 type User struct {
@@ -148,77 +142,4 @@ func TestRequest_SetHeaders(t *testing.T) {
 	req := NewRequest("")
 	req.SetHeaders("cookie", []string{"access=token"})
 	fmt.Println(req)
-}
-
-func TestWithNewRelicTracingDebug(t *testing.T) {
-	svr1 := createGinServer("chlorine_test_svr1")
-	svr2 := createGinServer("chlorine_test_svr2")
-
-	svr1.GET("/user", func(c *gin.Context) {
-		txnExist := newrelic.FromContext(c) != nil
-		log.Debug(c, "incoming header",
-			log.Any("header", c.Request.Header),
-			log.Bool("txn_exist", txnExist))
-
-		cl := NewClient("http://localhost:8089/gql")
-		req := NewRequest("mock graphql query string", ReqToken("mock gql req token"))
-		resp := &Response{
-			Data: map[string]*struct {
-				OrgID   string `json:"organization_id"`
-				OrgName string `json:"organization_name"`
-			}{},
-		}
-		time.Sleep(time.Millisecond * 5)
-		_, err := cl.Run(c, req, resp)
-		if err != nil {
-			panic(err)
-		}
-	})
-	svr2.POST("/gql", func(c *gin.Context) {
-		txnExist := newrelic.FromContext(c) != nil
-		log.Debug(c, "incoming header",
-			log.Any("header", c.Request.Header),
-			log.Bool("txn_exist", txnExist))
-		data := struct {
-			OrgID   string `json:"organization_id"`
-			OrgName string `json:"organization_name"`
-		}{
-			OrgID:   "mock org id",
-			OrgName: "mock org name",
-		}
-		time.Sleep(time.Second * 5)
-		c.JSONP(http.StatusOK, gin.H{"Data": data})
-	})
-
-	go svr1.Run(":8088")
-	go svr2.Run(":8089")
-	for {
-		select {}
-	}
-}
-
-func createNRApp(appName string) newrelic.Application {
-	nrApp, err := newrelic.NewApplication(newrelic.Config{
-		AppName: appName,
-		License: os.Getenv("nr_license"),
-		Enabled: true,
-		DistributedTracer: struct {
-			Enabled bool
-		}{Enabled: true},
-		SpanEvents: struct {
-			Enabled    bool
-			Attributes newrelic.AttributeDestinationConfig
-		}{Enabled: true},
-	})
-	if err != nil {
-		panic(err)
-	}
-	return nrApp
-}
-
-func createGinServer(appName string) *gin.Engine {
-	svr := gin.Default()
-	nrApp := createNRApp(appName)
-	svr.Use(nrgin.Middleware(nrApp))
-	return svr
 }
