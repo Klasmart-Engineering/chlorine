@@ -1,10 +1,10 @@
-module github.com/KL-Engineering/chlorine
+module github.com/Klasmart-Engineering/chlorine
 
 go 1.18
 
 require (
-	github.com/KL-Engineering/common-log v0.3.0
-	github.com/KL-Engineering/tracecontext v0.1.0
+	github.com/Klasmart-Engineering/common-log v0.3.0
+	github.com/Klasmart-Engineering/tracecontext v0.1.0
 	github.com/newrelic/go-agent/v3 v3.16.0
 )
 
