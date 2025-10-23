@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/KL-Engineering/common-log/log"
-	"github.com/KL-Engineering/tracecontext"
+	"github.com/Klasmart-Engineering/common-log/log"
+	"github.com/Klasmart-Engineering/tracecontext"
 	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
